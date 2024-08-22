@@ -45,6 +45,24 @@ def save_to_json(data, filename):
     with open(filename, 'w') as file:
         json.dump(data, file)
 
+def replace_double_quotes(value):
+    if pd.isna(value):
+        return value
+    try:
+        json_data = json.loads(value.replace("'", '"'))
+        return json.dumps(json_data).replace('"', "'")
+    except json.JSONDecodeError:
+        print(f"JSONDecodeError for value: {value}")
+        return value
+
+def handle_json(df):
+    handle_json_columns = ['old_values', 'new_values']
+    
+    for column in handle_json_columns:
+        if column in df.columns:
+            df[column] = df[column].apply(replace_double_quotes)
+
+
 def convert_to_utc(latest_datetime):
     cest = pytz.timezone('Europe/Berlin')
     if latest_datetime.tzinfo is None:
@@ -232,6 +250,8 @@ def create_special_update_csv_files(smartmate_data):
             executed_queries.append(export_query)
             result = connection.execute(export_query)
             df = pd.DataFrame(result.fetchall(), columns=result.keys())
+            if table['name'] == 'audits':
+                handle_json(df)
             # Save csv to file
             csv_name = f"special-update-{file_name}.csv"
             df.to_csv(f"{directory}/{csv_name}", index=False, quoting=csv.QUOTE_ALL)
@@ -243,8 +263,7 @@ def create_special_update_csv_files(smartmate_data):
             with open(f"{directory}/{file_name}_csv.sql", 'w') as file:
                 file.write('\n'.join([str(query) for query in executed_queries]))
 
-            dh = 'IGNORE' if table['name'] == 'audits' else 'REPLACE'
-            csv_query = generate_csv_query(table['name'], result.keys(), csv_name, duplicate_handling=dh, disable_constraints=True)
+            csv_query = generate_csv_query(table['name'], result.keys(), csv_name, duplicate_handling='REPLACE', disable_constraints=True)
             # Save load csv query to file
             with open(f"{directory}/{file_name}_load_csv.sql", 'w') as file:
                 file.write(csv_query)
