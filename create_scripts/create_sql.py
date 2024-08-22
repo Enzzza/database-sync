@@ -255,7 +255,7 @@ def create_special_update_csv_files(smartmate_data):
 
 smartmate_data = load_json()
 
-#get_latest(smartmate_data)
+get_latest(smartmate_data)
 create_insert_csv_files(smartmate_data)
 create_update_csv_files(smartmate_data)
 create_special_update_csv_files(smartmate_data)
