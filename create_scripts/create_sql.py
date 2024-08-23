@@ -119,6 +119,7 @@ LOAD DATA INFILE '{csv_path}'
 INTO TABLE `{table_name}`
 FIELDS TERMINATED BY '{field_terminator}'
 ENCLOSED BY '{enclosure}'
+ESCAPED BY ''
 LINES TERMINATED BY '{line_terminator}'
 IGNORE {ignore_lines} LINES
 ({field_list_str})
