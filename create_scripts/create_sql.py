@@ -52,7 +52,6 @@ def replace_double_quotes(value):
         json_data = json.loads(value.replace("'", '"'))
         return json.dumps(json_data).replace('"', "'")
     except json.JSONDecodeError:
-        print(f"JSONDecodeError for value: {value}")
         return value
 
 def handle_json(df):
