@@ -6,6 +6,8 @@ import os
 from dotenv import load_dotenv
 import time
 import csv
+from multiprocessing import Process
+
 
 start_time = time.time()
 load_dotenv('../.env')
@@ -25,6 +27,7 @@ schema_file = os.getenv("SCHEMA_FILE")
 dest_dir = os.getenv("DEST_DIR")
 source_dir = os.getenv("SOURCE_DIR")
 
+
 def create_connection(host, user, password, database):
     print(f"Creating connection to {host}...")
     try:
@@ -35,31 +38,17 @@ def create_connection(host, user, password, database):
         print(f"Failed to connect to {host} with error: {e}")
         return None
 
+
 def load_json():
     print("Loading smartmate schema...")
     with open(schema_file, 'r') as file:
         data = file.read()
         return json.loads(data)
 
+
 def save_to_json(data, filename):
     with open(filename, 'w') as file:
         json.dump(data, file)
-
-def replace_double_quotes(value):
-    if pd.isna(value):
-        return value
-    try:
-        json_data = json.loads(value.replace("'", '"'))
-        return json.dumps(json_data).replace('"', "'")
-    except json.JSONDecodeError:
-        return value
-
-def handle_json(df):
-    handle_json_columns = ['old_values', 'new_values']
-    
-    for column in handle_json_columns:
-        if column in df.columns:
-            df[column] = df[column].apply(replace_double_quotes)
 
 
 def convert_to_utc(latest_datetime):
@@ -67,6 +56,7 @@ def convert_to_utc(latest_datetime):
     if latest_datetime.tzinfo is None:
         latest_datetime = cest.localize(latest_datetime)
     return latest_datetime.astimezone(pytz.utc)
+
 
 def get_latest(smartmate_data):
     print("Getting latest data...")
@@ -85,7 +75,8 @@ def get_latest(smartmate_data):
     finally:
         connection.close()
 
-def generate_csv_query(table_name, fields, csv_name, field_terminator=',', enclosure='"', line_terminator='\\n', ignore_lines=1, duplicate_handling='IGNORE', disable_constraints=False):
+
+def generate_csv_query(table_name, fields, csv_name, field_terminator=',', enclosure='"', line_terminator='\\n', ignore_lines=1, duplicate_handling='IGNORE', disable_constraints=False , truncate_table=False):
     csv_path = f'{dest_dir}/{csv_name}'
     
     timestamp_columns = ['created_at', 'updated_at', 'deleted_at']
@@ -113,7 +104,8 @@ def generate_csv_query(table_name, fields, csv_name, field_terminator=',', enclo
     set_clauses_str = ', '.join(set_clauses) if set_clauses else ''
 
     query_template = """
-{set_constraints_beging}
+{set_constraints_begining}
+{truncate_table}
 LOAD DATA INFILE '{csv_path}'
 {duplicate_handling}
 INTO TABLE `{table_name}`
@@ -137,13 +129,13 @@ IGNORE {ignore_lines} LINES
         field_list_str=field_list_str,
         set_clauses_str=f"SET {set_clauses_str}" if set_clauses_str else '',
         duplicate_handling=duplicate_handling,
-        set_constraints_beging="SET foreign_key_checks = 0;" if disable_constraints else '',
-        set_constraints_end="SET foreign_key_checks = 1;" if disable_constraints else ''
+        set_constraints_begining="SET foreign_key_checks = 0;" if disable_constraints else '',
+        set_constraints_end="SET foreign_key_checks = 1;" if disable_constraints else '',
+        truncate_table=f"TRUNCATE TABLE {table_name};" if truncate_table else '',
+
     )
     
     return query
-
-
 
 
 def create_insert_csv_files(smartmate_data):
@@ -185,99 +177,56 @@ def create_insert_csv_files(smartmate_data):
     finally:
         connection.close()
 
-def create_update_csv_files(smartmate_data):
-    print("Creating update csv files...")
-    black_list_tables = ['charts', 'sms_logs']
+
+def create_special_insert_csv_file(table):
     connection = create_connection(host=rds_host, user=rds_user, password=rds_password, database=rds_database)
+    executed_queries = []
+    file_name = f"{table['rank']}-{table['name']}"
+    csv_name = f"special-insert-{file_name}.csv"
+    directory = os.path.join(source_dir, 'special_insert', file_name)
+    os.makedirs(directory, exist_ok=True)         
+    chunk_size = 10000
+    offset = 0
     try:
-        for table in smartmate_data['galera']['tables']:
-            if table['name'] in black_list_tables:
-                continue
-            file_name = f"{table['rank']}-{table['name']}"
-            directory = os.path.join(source_dir, 'update', file_name)
-            os.makedirs(directory, exist_ok=True)           
-            if 'latest_id' in table and table['latest_id'] is not None:
-                query = text(f"SELECT * FROM {table['name']} WHERE id <= {table['latest_id']} AND updated_at > '{table['latest_updated_at']}'")
-            else:
-                continue            
-            # Save csv query to file
+        while True:
+            query = text(f"SELECT * FROM {table['name']} LIMIT {chunk_size} OFFSET {offset}")
+            executed_queries.append(query)
             print(f"Executing query... {query}")
-            with open(f"{directory}/{file_name}_csv.sql", 'w') as file:
-                file.write(str(query))
             result = connection.execute(query)
+            if not result.rowcount:
+                break
             df = pd.DataFrame(result.fetchall(), columns=result.keys())
-            
-            csv_name = f"update-{file_name}.csv"
             # Save csv to file
-            df.to_csv(f"{directory}/{csv_name}", index=False, quoting=csv.QUOTE_ALL)
-           
-            csv_query = generate_csv_query(table['name'], result.keys(), csv_name, duplicate_handling='REPLACE', disable_constraints=True)
-            # Save load csv query to file
-            with open(f"{directory}/{file_name}_load_csv.sql", 'w') as file:
-                file.write(csv_query)
-                
+            df.to_csv(f"{directory}/{csv_name}", mode='a', index=False, quoting=csv.QUOTE_ALL)
+            offset += chunk_size
+        # Save csv query to file
+        with open(f"{directory}/{file_name}_csv.sql", 'w') as file:
+            file.write('\n'.join([str(query) for query in executed_queries]))
+        csv_query = generate_csv_query(table['name'], result.keys(), csv_name, duplicate_handling='IGNORE', disable_constraints=True, truncate_table=True)
+        # Save load csv query to file
+        with open(f"{directory}/{file_name}_load_csv.sql", 'w') as file:
+            file.write(csv_query)
     finally:
         connection.close()
 
 
-def create_special_update_csv_files(smartmate_data):
+
+def create_special_insert_csv_files(smartmate_data):
     print("Creating special update csv files...")
-    connection = create_connection(host=rds_host, user=rds_user, password=rds_password, database=rds_database)
-    try:
-        for table in smartmate_data['galera']['special_tables']:
-            executed_queries = []
-            file_name = f"{table['rank']}-{table['name']}"
-            directory = os.path.join(source_dir, 'special_update', file_name)
-            os.makedirs(directory, exist_ok=True)           
-            temp_table_name = f"temp_{table['name']}"
-            create_temp_table_query = text(f"CREATE TEMPORARY TABLE {temp_table_name} LIKE {table['name']}")
-            executed_queries.append(create_temp_table_query)
-            connection.execute(create_temp_table_query)
-
-            chunk_size = 1000
-            offset = 0
-            while True:
-                query = text(f"SELECT * FROM {table['name']} LIMIT {chunk_size} OFFSET {offset}")
-                executed_queries.append(query)
-                print(f"Executing query... {query}")
-                result = connection.execute(query)
-                if not result.rowcount:
-                    break
-                df = pd.DataFrame(result.fetchall(), columns=result.keys())
-                df.to_sql(temp_table_name, connection, if_exists='append', index=False)
-                offset += chunk_size            
-            export_query = text(f"SELECT * FROM {temp_table_name}")
-            executed_queries.append(export_query)
-            result = connection.execute(export_query)
-            df = pd.DataFrame(result.fetchall(), columns=result.keys())
-            if table['name'] == 'audits':
-                handle_json(df)
-            # Save csv to file
-            csv_name = f"special-update-{file_name}.csv"
-            df.to_csv(f"{directory}/{csv_name}", index=False, quoting=csv.QUOTE_ALL)
-            
-            drop_temp_table_query = text(f"DROP TEMPORARY TABLE {temp_table_name}")
-            executed_queries.append(drop_temp_table_query)
-            connection.execute(drop_temp_table_query)           
-            # Save csv query to file
-            with open(f"{directory}/{file_name}_csv.sql", 'w') as file:
-                file.write('\n'.join([str(query) for query in executed_queries]))
-
-            csv_query = generate_csv_query(table['name'], result.keys(), csv_name, duplicate_handling='REPLACE', disable_constraints=True)
-            # Save load csv query to file
-            with open(f"{directory}/{file_name}_load_csv.sql", 'w') as file:
-                file.write(csv_query)
-    finally:
-        connection.close()
-
+    proccesses = []
+    
+    for table in smartmate_data['galera']['special_tables']:
+        p = Process(target=create_special_insert_csv_file, args=(table,))
+        proccesses.append(p)
+        p.start()
+    for p in proccesses:
+        p.join()
 
 
 smartmate_data = load_json()
-
 get_latest(smartmate_data)
 create_insert_csv_files(smartmate_data)
-create_update_csv_files(smartmate_data)
-create_special_update_csv_files(smartmate_data)
+create_special_insert_csv_files(smartmate_data)
 
 
 end_time = time.time()

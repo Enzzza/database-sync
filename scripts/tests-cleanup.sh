@@ -15,11 +15,11 @@ set -a ; source ../.env ; set +a
 
 echo -e "${Black}---------------------------------------------${NC}"
 echo -e "${Green}Cleanup started at $(date)${NC}"
-echo -e "${Purple}Cleaning destination directory: ${White}$DEST_DIR${NC}"
-if [ -z "$(ls -A $DEST_DIR)" ]; then
+echo -e "${Purple}Cleaning destination directory: ${White}$TEST_DEST_DIR/special_insert${NC}"
+if [ -z "$(ls -A $TEST_DEST_DIR/special_insert)" ]; then
     echo -e "${Yellow}Destination directory is empty.${NC}"
 else
-    sudo find $DEST_DIR -type f -print0 | sudo xargs -0 rm
+    sudo find $TEST_DEST_DIR/special_insert -type f -print0 | sudo xargs -0 rm
     echo -e "${Green}Destination directory cleaned.${NC}"
 fi
 echo -e "${Green}Cleanup finished at $(date)${NC}"

@@ -5,14 +5,32 @@
                 "name": "charts",
                 "rank": "02"
                  
+            }
+        ],
+        "special_tables":[
+            {
+                "name": "audits",
+                "rank": "01" 
             },
             {
                 "name": "clients",
                 "rank": "03"
             },
             {
+                "name": "users",
+                "rank": "04"
+            },
+            {
+                "name": "sms_logs",
+                "rank": "05"
+            },
+            {
                 "name": "comments",
                 "rank": "06"
+            },
+            {
+                "name": "facilities",
+                "rank": "07"
             },
             {
                 "name": "departments",
@@ -23,40 +41,48 @@
                 "rank": "09"
             },
             {
-                "name": "documents",
-                "rank": "28"
+                "name": "staff_users",
+                "rank": "10"
             },
             {
-                "name": "exception_tasks",
-                "rank": "27"
-            },
-            {
-                "name": "facilities",
-                "rank": "07"
-            },
-            {
-                "name": "facility_services",
-                "rank": "29"
-            },
-            {
-                "name": "gateways",
-                "rank": "13"
-            },
-            {
-                "name": "logs",
-                "rank": "24"
-            },
-            {
-                "name": "measuring_thresholds",
-                "rank": "15"
+                "name": "staff_time_log",
+                "rank": "11"
             },
             {
                 "name": "programs",
                 "rank": "12"
             },
             {
+                "name": "gateways",
+                "rank": "13"
+            },
+            {
+                "name": "sensors",
+                "rank": "14"
+            },
+            {
+                "name": "measuring_thresholds",
+                "rank": "15"
+            },
+            {
+                "name": "users_departments",
+                "rank": "16"
+            },
+            {
+                "name": "users_sensors",
+                "rank": "17"
+            },
+            {
                 "name": "reports",
                 "rank": "18"
+            },
+            {
+                "name": "model_has_roles",
+                "rank": "19"
+            },
+            {
+                "name": "tasks",
+                "rank": "20"
             },
             {
                 "name": "schedules",
@@ -67,46 +93,36 @@
                 "rank": "22"
             },
             {
-                "name": "sensors",
-                "rank": "14"
-            },
-            {
-                "name": "sms_logs",
-                "rank": "05"
-            },
-            {
-                "name": "staff_time_log",
-                "rank": "11"
-            },
-            {
-                "name": "staff_users",
-                "rank": "10"
-            },
-            {
                 "name": "subtasks",
                 "rank": "23"
+            },
+            {
+                "name": "logs",
+                "rank": "24"
             },
             {
                 "name": "subtasks_translations",
                 "rank": "25"
             },
             {
-                "name": "tasks",
-                "rank": "20"
-            },
-            {
                 "name": "tasks_translations",
                 "rank": "26"
             },
             {
-                "name": "users",
-                "rank": "04"
-            }
-        ],
-        "special_tables":[
+                "name": "exception_tasks",
+                "rank": "27"
+            },
             {
-                "name": "audits",
-                "rank": "01" 
+                "name": "documents",
+                "rank": "28"
+            },
+            {
+                "name": "facility_services",
+                "rank": "29"
+            },
+            {
+                "name": "templates_entities",
+                "rank": "30"
             },
             {
                 "name": "oauth_access_tokens",
@@ -115,22 +131,6 @@
             {
                 "name": "password_resets",
                 "rank": "32"
-            },
-            {
-                "name": "model_has_roles",
-                "rank": "19"
-            },
-            {
-                "name": "templates_entities",
-                "rank": "30"
-            },
-            {
-                "name": "users_departments",
-                "rank": "16"
-            },
-            {
-                "name": "users_sensors",
-                "rank": "17"
             }
         ]
     }

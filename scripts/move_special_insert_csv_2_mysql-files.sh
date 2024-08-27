@@ -14,7 +14,7 @@ SECONDS=0
 
 set -a ; source ../.env ; set +a
 
-SPECIAL_UPDATE_DIR="$SOURCE_DIR/special_update"
+SPECIAL_UPDATE_DIR="$SOURCE_DIR/special_insert"
 
 start() {
     set -e
@@ -28,7 +28,7 @@ start() {
         table_name=$(basename "$dir")
         echo -e "${Yellow}Moving table csv: '${Purple}$table_name${Yellow}'${NC}"
 
-        csv_file="${dir}special-update-${table_name#* -}.csv"
+        csv_file="${dir}special-insert-${table_name#* -}.csv"
         
         echo -e " - ${Cyan}Looking for CSV file: ${White}$csv_file${NC}"
         if [ ! -f "$csv_file" ]; then

@@ -15,7 +15,7 @@ rds_user = os.getenv("RDS_USER")
 rds_password = os.getenv("RDS_PASSWORD")
 rds_database = os.getenv("RDS_DATABASE")
 
-schema_file = os.getenv("SCHEMA_FILE")
+schema_file = os.getenv("TEST_SCHEMA_FILE")
 
 def create_connection(host, user, password, database):
     print(f"Creating connection to {host}...")

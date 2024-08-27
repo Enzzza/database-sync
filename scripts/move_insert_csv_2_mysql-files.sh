@@ -14,34 +14,35 @@ SECONDS=0
 
 set -a ; source ../.env ; set +a
 
-UPDATE_DIR="$SOURCE_DIR/update"
+
+INSERT_DIR="$SOURCE_DIR/insert"
 
 start() {
-    set -e
-    
-    cd "$UPDATE_DIR" || { echo -e "${Red}Error: Source directory not found.${NC}"; exit 1; }
+    set -e 
+
+    cd "$INSERT_DIR" || { echo -e "${Red}Error: Source directory not found.${NC}"; exit 1; }
 
     echo -e "${Black}---------------------------------------------${NC}"
-    echo -e "${Green}Moving update csv data started at $(date)${NC}"
+    echo -e "${Green}Moving insert csv data started at $(date)${NC}"
     echo -e "${Black}---------------------------------------------${NC}\n"
 
     for dir in */; do
         table_name=$(basename "$dir")
         echo -e "${Yellow}Moving table csv: '${Purple}$table_name${Yellow}'${NC}"
 
-        csv_file="${dir}update-${table_name#* -}.csv"
+        csv_file="${dir}insert-${table_name#* -}.csv"
         
         echo -e " - ${Cyan}Looking for CSV file: ${White}$csv_file${NC}"
         if [ ! -f "$csv_file" ]; then
             echo -e "${Red}Error: CSV file $csv_file not found. Exiting...${NC}\n"
             exit 1
         fi
-                
+        
         cp "$csv_file" "$DEST_DIR/"
         csv_file_name=$(basename "$csv_file")
         chmod "$PERMISSIONS" "$DEST_DIR/$csv_file_name"
         chgrp "$GROUP" "$DEST_DIR/$csv_file_name"
-        
+                
         echo -e "${Green}Finished moving table csv '${Purple}$table_name${Green}'${NC}\n"
     done
 }

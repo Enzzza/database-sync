@@ -29,7 +29,6 @@ start() {
         table_name=$(basename "$dir")
         echo -e "${Yellow}Processing table: '${Purple}$table_name${Yellow}'${NC}"
 
-        csv_file="${dir}insert-${table_name#* -}.csv"
         sql_file="${dir}${table_name}_load_csv.sql"
         
         echo -e " - ${Cyan}Looking for SQL file: ${White}$sql_file${NC}"
