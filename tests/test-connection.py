@@ -15,7 +15,7 @@ galera_user = os.getenv("GALERA_USER")
 galera_password = os.getenv("GALERA_PASSWORD")
 galera_database = os.getenv("GALERA_DATABASE")
 
-schema_file = os.getenv("SCHEMA_FILE")
+schema_file = os.getenv("TEST_SCHEMA_FILE")
 
 def create_connection(host, user, password, database):
     print(f"Creating connection to {host}...")
